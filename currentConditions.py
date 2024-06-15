@@ -8,10 +8,10 @@ def get_coordinates(city):
     # parameters for geocoding request
     params = {
         "address": city,
-        "key": "AIzaSyDAanUpMZudipzPw2yh09be-Thru9Qk4oE"
+        "key": "API_KEY"
     }
 
-    # send request to geocoding API
+    # send a request to geocoding API
     geocode_response = requests.get(geocode_url, params=params)
 
     # get info
@@ -28,7 +28,7 @@ def get_coordinates(city):
 
 def get_air_quality(latitude, longitude):
     # API endpoint url
-    url = "https://airquality.googleapis.com/v1/currentConditions:lookup?key=AIzaSyDAanUpMZudipzPw2yh09be-Thru9Qk4oE"
+    url = "https://airquality.googleapis.com/v1/currentConditions:lookup?key=API_KEY"
 
     # request information
     data = {
