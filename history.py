@@ -13,7 +13,7 @@ def get_coordinates(city):
     # parameters for geocoding request
     params = {
         "address": city,
-        "key": "AIzaSyDAanUpMZudipzPw2yh09be-Thru9Qk4oE"
+        "key": "API_KEY"
     }
     
     # send request to geocoding API
@@ -33,7 +33,7 @@ def get_coordinates(city):
 
 def get_historical_air_quality(dateTime, latitude, longitude):
     # url for history endpoint
-    url = "https://airquality.googleapis.com/v1/history:lookup?key=AIzaSyDAanUpMZudipzPw2yh09be-Thru9Qk4oE"
+    url = "https://airquality.googleapis.com/v1/history:lookup?key=API_KEY"
     
     # requested information 
     data = {
