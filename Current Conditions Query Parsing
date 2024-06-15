@@ -1,0 +1,150 @@
+import requests
+import json
+import spacy #python library for NLP
+import re #helps work with regular expressions
+import sys #system-specific parameters and functions
+
+# Load spaCy model
+nlp = spacy.load("en_core_web_sm")
+
+# Function to get coordinates through geocoding 
+def get_coordinates(city):
+    geocode_url = "https://maps.googleapis.com/maps/api/geocode/json"
+    params = {"address": city, "key": "API_KEY"}
+    geocode_response = requests.get(geocode_url, params=params)
+    if geocode_response.status_code == 200:
+        results = geocode_response.json()["results"]
+        if results:
+            location = results[0]["geometry"]["location"]
+            return location["lat"], location["lng"]
+    return None, None
+
+# Function to get air quality data by requesting it from the API
+def get_air_quality(latitude, longitude):
+    url = "https://airquality.googleapis.com/v1/currentConditions:lookup?key=API_KEY"
+    data = {
+        "universalAqi": True,
+        "location": {"latitude": latitude, "longitude": longitude},
+        "extraComputations": ["HEALTH_RECOMMENDATIONS", "DOMINANT_POLLUTANT_CONCENTRATION", "POLLUTANT_CONCENTRATION", "LOCAL_AQI", "POLLUTANT_ADDITIONAL_INFO"],
+        "languageCode": "en"
+    }
+    headers = {'Content-Type': 'application/json'}
+    response = requests.post(url, data=json.dumps(data), headers=headers)
+    if response.status_code == 200:
+        return response.json()
+    return None
+
+# Function to extract requested info from air quality data
+def extract_requested_info(entity, air_quality_data):
+    responses = []
+
+    health_recommendations = air_quality_data.get("healthRecommendations", {})
+    dominant_pollutant = air_quality_data.get("indexes", [{}])[0].get("dominantPollutant")
+
+    if entity == "HR:GENERAL":
+        general_hr = health_recommendations.get("generalPopulation", "")
+        responses.append({"status": "success", "data": {"HR:GENERAL": general_hr}})
+    
+    if entity == "HR:ELDERLY":
+        elderly_hr = health_recommendations.get("elderly", "")
+        responses.append({"status": "success", "data": {"HR:ELDERLY": elderly_hr}})
+    
+    if entity == "HR:LUNG DISEASES":
+        lung_diseases_hr = health_recommendations.get("lungDiseasePopulation", "")
+        responses.append({"status": "success", "data": {"HR:LUNG DISEASES": lung_diseases_hr}})
+    
+    if entity == "HR:HEART DISEASES":
+        heart_diseases_hr = health_recommendations.get("heartDiseasePopulation", "")
+        responses.append({"status": "success", "data": {"HR:HEART DISEASES": heart_diseases_hr}})
+    
+    if entity == "HR:ATHLETES":
+        athletes_hr = health_recommendations.get("athletes", "")
+        responses.append({"status": "success", "data": {"HR:ATHLETES": athletes_hr}})
+    
+    if entity == "HR:PREGNANT WOMEN":
+        pregnant_women_hr = health_recommendations.get("pregnantWomen", "")
+        responses.append({"status": "success", "data": {"HR:PREGNANT WOMEN": pregnant_women_hr}})
+    
+    if entity == "HR:CHILDREN":
+        children_hr = health_recommendations.get("children", "")
+        responses.append({"status": "success", "data": {"HR:CHILDREN": children_hr}})
+    
+    if entity == "DOMINANT POLLUTANT":
+        responses.append({"status": "success", "data": {"dominant_pollutant": dominant_pollutant}})
+    
+    if entity == "POLLUTANT CONCENTRATION":
+        pollutants = air_quality_data.get("pollutants", [])
+        pollutant_concentrations = [{pollutant["code"]: pollutant["concentration"]} for pollutant in pollutants]
+        responses.append({"status": "success", "data": {"pollutant_concentrations": pollutant_concentrations}})
+    
+    if entity == "POLLUTANT SOURCES AND EFFECTS":
+        pollutants = air_quality_data.get("pollutants", [])
+        sources_effects = [{
+            pollutant["code"]: {
+                "sources": pollutant["additionalInfo"]["sources"],
+                "effects": pollutant["additionalInfo"]["effects"]
+            }
+        } for pollutant in pollutants]
+        responses.append({"status": "success", "data": {"sources_and_effects": sources_effects}})
+    
+    if entity == "AQI":
+        aqi_indexes = air_quality_data.get("indexes", [])
+        aqi_info = [{"index": aqi["displayName"], "range": aqi["aqi"], "category": aqi["category"]} for aqi in aqi_indexes]
+        responses.append({"status": "success", "data": {"aqi_info": aqi_info}})
+    
+    if not responses:
+        responses.append({"status": "error", "message": "Could not determine specific request."})
+
+    return responses
+
+# Function to process the text query
+def process_text_query(text):
+    # Use spaCy to extract entities
+    doc = nlp(text)
+    city = None
+    entity = None
+
+    for ent in doc.ents:
+        # Geopolitical Entity (location)
+        if ent.label_ == "GPE":  # Geopolitical Entity (location)
+            city = ent.text
+
+    # Use regex to identify the requested entity
+    entity_patterns = {
+        "AQI": r"\bair quality index\b",
+        "HR:GENERAL": r"\bgeneral population\b",
+        "HR:ELDERLY": r"\belderly\b",
+        "HR:LUNG DISEASES": r"\blung diseases\b",
+        "HR:HEART DISEASES": r"\bheart diseases\b",
+        "HR:ATHLETES": r"\bathletes\b",
+        "HR:PREGNANT WOMEN": r"\bpregnant women\b",
+        "HR:CHILDREN": r"\bchildren\b",
+        "DOMINANT POLLUTANT": r"\bdominant pollutant\b"
+    }
+    for key, pattern in entity_patterns.items():
+        if re.search(pattern, text, re.IGNORECASE):
+            entity = key
+            break
+
+    if city and entity:
+        latitude, longitude = get_coordinates(city)
+        if latitude and longitude:
+            air_quality_data = get_air_quality(latitude, longitude)
+            if air_quality_data:
+                response = extract_requested_info(entity, air_quality_data)
+                response.insert(0, {"location": {"city": city, "latitude": latitude, "longitude": longitude}})
+                return response
+            else:
+                return [{"error": "air quality data was not retrieved."}]
+        else:
+            return [{"error": "Sorry, could not find the location."}]
+    elif not city:
+        return [{"error": "Sorry, could not determine the location from your request. Can you try again?"}]
+    else:
+        return [{"error": "Sorry I cannot help you with this request."}]
+
+if __name__ == "__main__":
+    # Read query from command line argument
+    query = sys.argv[1]
+    response = process_text_query(query) 
+    print(json.dumps(response, indent=2))
