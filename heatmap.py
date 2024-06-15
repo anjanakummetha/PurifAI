@@ -1,7 +1,7 @@
-#api_key = os.getenv('AIzaSyDAanUpMZudipzPw2yh09be-Thru9Qk4oE')
+#api_key = os.getenv('API_KEY')
 import requests
 
-api_key = "AIzaSyDAanUpMZudipzPw2yh09be-Thru9Qk4oE"
+api_key = "API_KEY"
 type_heatmap = "US_AQI"
 zoom_level = "2"
 x_coordinate = "0"
@@ -10,7 +10,7 @@ api_base_url = "https://airquality.googleapis.com/v1/mapTypes"
 
 # url with required parameters
 url = f"{api_base_url}/{type_heatmap}/heatmapTiles/{zoom_level}/{x_coordinate}/{y_coordinate}?key={api_key}"
-#https://airquality.googleapis.com/v1/mapTypes/US_AQI/heatmapTiles/2/0/1?key=AIzaSyDAanUpMZudipzPw2yh09be-Thru9Qk4oE
+#https://airquality.googleapis.com/v1/mapTypes/US_AQI/heatmapTiles/2/0/1?key=API_KEY
 
 
 # request to retrieve url
