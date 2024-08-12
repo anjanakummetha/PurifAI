@@ -1,0 +1,97 @@
+import requests
+import json
+from NER_model import recognize_entities  # Importing NER model
+from intent_recognition import load_model, predict_intent  # Importing IR model
+
+# Function to get latitude and longitude for a given city using Google Geocoding API
+def get_coordinates(city):
+    geocode_url = "https://maps.googleapis.com/maps/api/geocode/json"
+    params = {"address": city, "key": "AIzaSyDAanUpMZudipzPw2yh09be-Thru9Qk4oE"}  # My API key for the geocoding service
+    geocode_response = requests.get(geocode_url, params=params)
+    if geocode_response.status_code == 200:
+        results = geocode_response.json()["results"]
+        if results:
+            location = results[0]["geometry"]["location"]
+            return location["lat"], location["lng"]  # Returning latitude and longitude
+    return None, None  # If something goes wrong, return None
+
+# Function to get air quality data using the coordinates from the Google Air Quality API
+def get_air_quality(latitude, longitude):
+    url = "https://airquality.googleapis.com/v1/currentConditions:lookup?key=AIzaSyDAanUpMZudipzPw2yh09be-Thru9Qk4oE"  # Air quality API URL
+    data = {
+        "universalAqi": True,  # Asking for the universal AQI format
+        "location": {"latitude": latitude, "longitude": longitude},  # Passing in the latitude and longitude
+        "extraComputations": ["HEALTH_RECOMMENDATIONS", "DOMINANT_POLLUTANT_CONCENTRATION", "POLLUTANT_CONCENTRATION", "LOCAL_AQI", "POLLUTANT_ADDITIONAL_INFO"],
+        "languageCode": "en"  # Language -> English
+    }
+    headers = {'Content-Type': 'application/json'}
+    response = requests.post(url, data=json.dumps(data), headers=headers)
+    if response.status_code == 200:
+        return response.json()  # If the request is successful, return the JSON data
+    return None  # If the request fails, return None
+
+# Function to generate the response text based on the entity requested (AQI, health recommendations, etc.)
+def generate_response_text(entity, city, air_quality_data, entities):
+    health_recommendations = air_quality_data.get("healthRecommendations", {})
+    dominant_pollutant = air_quality_data.get("indexes", [{}])[0].get("dominantPollutant")
+    response = ""
+
+    if entity == "HEALTH_RECOMMENDATIONS":
+        if "CHILDREN" in entities:
+            children_hr = health_recommendations.get("children", "")
+            response = f"Health recommendations for children in {city}: {children_hr}"
+        elif "ELDERLY" in entities:
+            elderly_hr = health_recommendations.get("elderly", "")
+            response = f"Health recommendations for the elderly in {city}: {elderly_hr}"
+        elif "LUNG_DISEASES" in entities:
+            lung_diseases_hr = health_recommendations.get("lungDiseases", "")
+            response = f"Health recommendations for people with lung diseases in {city}: {lung_diseases_hr}"
+        elif "HEART_DISEASES" in entities:
+            heart_diseases_hr = health_recommendations.get("heartDiseases", "")
+            response = f"Health recommendations for people with heart diseases in {city}: {heart_diseases_hr}"
+        elif "ATHLETES" in entities:
+            athletes_hr = health_recommendations.get("athletes", "")
+            response = f"Health recommendations for athletes in {city}: {athletes_hr}"
+        elif "PREGNANT_WOMEN" in entities:
+            pregnant_women_hr = health_recommendations.get("pregnantWomen", "")
+            response = f"Health recommendations for pregnant women in {city}: {pregnant_women_hr}"
+        else:
+            general_hr = health_recommendations.get("generalPopulation", "")
+            response = f"General health recommendations in {city}: {general_hr}"
+
+    elif entity == "DOMINANT_POLLUTANT":
+        response = f"The dominant pollutant in your area is {dominant_pollutant}."
+    
+    elif entity == "AQ_INDEX":
+        aqi_indexes = air_quality_data.get("indexes", [])
+        if aqi_indexes:
+            aqi = aqi_indexes[0]["aqi"]
+            category = aqi_indexes[0]["category"]
+            response = f"The current Air Quality Index (AQI) for {city} is {aqi}. {category}."
+
+    return response
+
+# Function to handle the "check current conditions" intent by finding what the user is looking for specifically
+def handle_check_current_conditions(entities):
+    city = entities.get("LOCATION", "Unknown Location")
+    entity = None
+    if "AQ_INDEX" in entities:
+        entity = "AQ_INDEX"
+    elif "HEALTH_RECOMMENDATIONS" in entities:
+        entity = "HEALTH_RECOMMENDATIONS"
+    elif "DOMINANT_POLLUTANT" in entities:
+        entity = "DOMINANT_POLLUTANT"
+    
+    if city != "Unknown Location" and entity:
+        latitude, longitude = get_coordinates(city)
+        if latitude and longitude:
+            air_quality_data = get_air_quality(latitude, longitude)
+            if air_quality_data:
+                response = generate_response_text(entity, city, air_quality_data, entities)
+                return {"response": response}
+            else:
+                return {"error": "Could not retrieve air quality data."}
+        else:
+            return {"error": "Could not find location."}
+    else:
+        return {"error": "Could not determine location or specific request."}
