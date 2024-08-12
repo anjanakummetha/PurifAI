@@ -3,6 +3,7 @@ import sys
 import os  # Import os module for file paths and directories
 from NER_model import recognize_entities
 from intent_recognition import load_model, predict_intent
+import base64
 
 # This function returns the map details for a given location
 def get_location_data(location):
@@ -24,22 +25,27 @@ def generate_heatmap(api_key, map_type, zoom_level, x_tile, y_tile, location):
     api_base_url = "https://airquality.googleapis.com/v1/mapTypes"
     url = f"{api_base_url}/{map_type}/heatmapTiles/{zoom_level}/{x_tile}/{y_tile}?key={api_key}"
 
-    # SSending a request to get the heatmap image
+    # Sending a request to get the heatmap image
     response = requests.get(url)
     if response.status_code == 200:
+        # Save the image to a temporary file (if needed for debugging or other purposes)
         filename = f'heatmap_{map_type}_{zoom_level}_{x_tile}_{y_tile}.png'
-        file_path = os.path.join('heatmaps', filename)  # Set the path to save the heatmap image
-
-        # Create the heatmaps directory
+        file_path = os.path.join('heatmaps', filename)
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
-
-        # Save the heatmap image to the specified path
+        
         with open(file_path, 'wb') as file:
             file.write(response.content)
         
-        # Generate the URL to access the saved heatmap image
-        heatmap_url = f"http://localhost:3003/heatmaps/{filename}"
-        return {"status": "success", "message": f"Here's the heatmap for {location}:", "url": heatmap_url}
+        # Encode the image to Base64
+        with open(file_path, 'rb') as image_file:
+            encoded_image = base64.b64encode(image_file.read()).decode('utf-8')
+
+        # Include the image data directly in the response
+        return {
+            "status": "success",
+            "message": f"Here's the heatmap for {location}:",
+            "image_data": encoded_image
+        }
     else:
         # Print an error if it doesn't work
         print(f"Error generating heatmap: {response.content}")
@@ -62,7 +68,7 @@ def handle_view_heatmaps(entities):
             y_tile = location_data["y_tile"]
             
             # Generate the heatmap and return it
-            return generate_heatmap("ADD_API_KEY_HERE", map_type, zoom_level, x_tile, y_tile, location)
+            return generate_heatmap("REPLACE_WITH_API_KEY", map_type, zoom_level, x_tile, y_tile, location)
         else:
             # Return an error if the location isn't right
             return {"status": "error", "message": "Invalid location provided."}
