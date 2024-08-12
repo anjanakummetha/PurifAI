@@ -62,7 +62,7 @@ def handle_view_heatmaps(entities):
             y_tile = location_data["y_tile"]
             
             # Generate the heatmap and return it
-            return generate_heatmap("AIzaSyDAanUpMZudipzPw2yh09be-Thru9Qk4oE", map_type, zoom_level, x_tile, y_tile, location)
+            return generate_heatmap("ADD_API_KEY_HERE", map_type, zoom_level, x_tile, y_tile, location)
         else:
             # Return an error if the location isn't right
             return {"status": "error", "message": "Invalid location provided."}
