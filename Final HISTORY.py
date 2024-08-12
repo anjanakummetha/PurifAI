@@ -6,7 +6,7 @@ from dateutil import parser, tz
 
 # Get latitude and longitude for a city using Google Geocoding API
 def get_coordinates(city_name):
-    api_key = "AIzaSyDAanUpMZudipzPw2yh09be-Thru9Qk4oE"  # API key
+    api_key = "ADD_API_KEY_HERE"  # API key
     geocode_url = f"https://maps.googleapis.com/maps/api/geocode/json?address={city_name}&key={api_key}"
     
     response = requests.get(geocode_url)
@@ -19,7 +19,7 @@ def get_coordinates(city_name):
 
 # Get historical air quality data for a specific time and place
 def get_historical_air_quality(dateTime, latitude, longitude):
-    url = "https://airquality.googleapis.com/v1/history:lookup?key=AIzaSyDAanUpMZudipzPw2yh09be-Thru9Qk4oE"
+    url = "https://airquality.googleapis.com/v1/history:lookup?key=ADD_API_KEY_HERE"
     data = {
         "dateTime": dateTime,
         "location": {"latitude": latitude, "longitude": longitude}
