@@ -6,7 +6,7 @@ from intent_recognition import load_model, predict_intent  # Importing IR model
 # Function to get latitude and longitude for a given city using Google Geocoding API
 def get_coordinates(city):
     geocode_url = "https://maps.googleapis.com/maps/api/geocode/json"
-    params = {"address": city, "key": "AIzaSyDAanUpMZudipzPw2yh09be-Thru9Qk4oE"}  # My API key for the geocoding service
+    params = {"address": city, "key": "ADD_API_KEY_HERE"}  # My API key for the geocoding service
     geocode_response = requests.get(geocode_url, params=params)
     if geocode_response.status_code == 200:
         results = geocode_response.json()["results"]
@@ -17,7 +17,7 @@ def get_coordinates(city):
 
 # Function to get air quality data using the coordinates from the Google Air Quality API
 def get_air_quality(latitude, longitude):
-    url = "https://airquality.googleapis.com/v1/currentConditions:lookup?key=AIzaSyDAanUpMZudipzPw2yh09be-Thru9Qk4oE"  # Air quality API URL
+    url = "https://airquality.googleapis.com/v1/currentConditions:lookup?key=ADD_API_KEY_HERE"  # Air quality API URL
     data = {
         "universalAqi": True,  # Asking for the universal AQI format
         "location": {"latitude": latitude, "longitude": longitude},  # Passing in the latitude and longitude
