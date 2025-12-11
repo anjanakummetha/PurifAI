@@ -2,15 +2,15 @@
 A Python-based system for interpreting natural-language queries about air quality, extracting user intent and entities, and retrieving information from the Google Air Quality API.
 The project includes modules for current conditions, historical data, and heatmap generation, along with a custom NER model and a simple intent-recognition model.
 
-## Table of Contents 
-* Overview
-* Features
-* Installation
-* Environment Variables
-* Project Structure
-* Usage
-* Module Descriptions
-* Limitations
+## Table of Contents
+* [Overview](#overview)
+* [Features](#features)
+* [Installation](#installation)
+* [Environment Variables](#environment-variables)
+* [Project Structure](#project-structure)
+* [Usage](#usage)
+* [Module Descriptions](#module-descriptions)
+* [Limitations](#limitations)
 
 ## Overview 
 The system takes a user query (e.g., “What’s the AQI in Dallas today?”), identifies:
@@ -60,7 +60,7 @@ python -m spacy download en_core_web_sm
 If you want to retrain the NER model:
 python Final\ NER_model_training.py
 
-##Environment Variables 
+## Environment Variables 
 Add Google API keys in the code where placeholders say: ADD_API_KEY_HERE
 
 Required keys:
